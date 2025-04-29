@@ -77,6 +77,15 @@ char** init_picture() {
     return picture;
 }
 
+void free_picture(char** picture) {
+    if (!picture) return;
+    
+    for (int i = 0; i < Y_PIXELS; i++) {
+        free(picture[i]);
+    }
+    free(picture);
+}
+
 char*** init_blocks() {
     char*** blocks = malloc(sizeof(char**) * Z_BLOCKS);
     for (int i = 0; i < Z_BLOCKS; i++) {
@@ -89,6 +98,19 @@ char*** init_blocks() {
         }
     }
     return blocks;
+}
+
+void free_blocks(char*** blocks) {
+    if (!blocks) return;
+
+    for (int i = 0; i < Z_BLOCKS; i++) {
+        if (!blocks[i]) continue;
+        for (int j = 0; j < Y_BLOCKS; j++) {
+            free(blocks[i][j]);
+        }
+        free(blocks[i]);
+    }
+    free(blocks);
 }
 
 player_pos_view init_posview() {
@@ -164,6 +186,15 @@ vect** init_directions(vect2 view) {
     return dir;
 }
 
+void free_directions(vect** directions) {
+    if (!directions) return;
+    
+    for (int y = 0; y < Y_PIXELS; y++) {
+        free(directions[y]);
+    }
+    free(directions);
+}
+
 int ray_outside(vect pos) {
     if (pos.x >= X_BLOCKS || pos.y >= Y_BLOCKS || pos.z >= Z_BLOCKS
         || pos.x < 0 || pos.y < 0 || pos.z < 0) {
@@ -231,13 +262,14 @@ char raytrace(vect pos, vect dir, char*** blocks) {
     return ' ';
 }
 
-char** get_picture(char** picture, player_pos_view posview, char*** blocks) {
+void get_picture(char** picture, player_pos_view posview, char*** blocks) {
     vect** directions = init_directions(posview.view);
     for (int y = 0; y < Y_PIXELS; y++) {
         for (int x = 0; x < X_PIXELS; x++) {
             picture[y][x] = raytrace(posview.pos, directions[y][x], blocks);
         }
     }
+    free_directions(directions);
 }
 
 void draw_ascii(char** picture) {
@@ -395,6 +427,9 @@ int main() {
     while (1) {
         process_input();
         if (is_key_pressed('q')) {
+            free_blocks(blocks);
+            free_picture(picture);
+            restore_terminal();
             exit(0);
         }
         update_pos_view(&posview, blocks);
@@ -426,5 +461,7 @@ int main() {
         usleep(20000);
     }
     restore_terminal();
+    free_blocks(blocks);
+    free_picture(picture);
     return 0;
 }
